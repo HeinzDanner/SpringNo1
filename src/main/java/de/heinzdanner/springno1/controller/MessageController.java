@@ -1,46 +1,70 @@
 package de.heinzdanner.springno1.controller;
 
 import de.heinzdanner.springno1.model.Message;
+import de.heinzdanner.springno1.repository.MessageRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/messages")
 public class MessageController {
 
-    private final List<Message> messages = new ArrayList<>();
+    private final MessageRepository repository;
 
-    // Ein paar Beispieldaten zum Testen
-    public MessageController() {
-        messages.add(new Message("1", "John", "Hallo zusammen"));
-        messages.add(new Message("2", "Anna", "Spring macht Spaß"));
+    // Constructor Injection: Spring übergibt das Repository automatisch
+    public MessageController(MessageRepository repository) {
+        this.repository = repository;
     }
 
     // GET /api/messages
     @GetMapping
     public List<Message> getAll() {
-        return messages;
+        return repository.findAll();
+    }
+
+    // GET /api/messages/1
+    @GetMapping("/{id}")
+    public ResponseEntity<Message> getById(@PathVariable String id) {
+        Optional<Message> message = repository.findById(id);
+
+        if (message.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(message.get());
     }
 
     // POST /api/messages
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Message create(@RequestBody Message message) {
-        messages.add(message);
-        return message;
+        return repository.save(message);
     }
 
-    // DELETE /api/messages/1  (Bonus)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        boolean removed = messages.removeIf(m -> m.getId().equals(id));
-
-        if (!removed) {
+    // PUT /api/messages/1
+    @PutMapping("/{id}")
+    public ResponseEntity<Message> update(@PathVariable String id, @RequestBody Message message) {
+        if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
 
+        message.setId(id);
+        Message updated = repository.save(message);
+        return ResponseEntity.ok(updated);
+    }
+
+    // DELETE /api/messages/1
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

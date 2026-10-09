@@ -1,5 +1,8 @@
 package de.heinzdanner.springno1.model;
 
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document("messages")
 public class Message {
 
     private String id;
